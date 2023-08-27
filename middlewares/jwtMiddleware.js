@@ -5,7 +5,7 @@ import responseHelper from '../helpers/responseHelper.js';
 const jwtMiddleware = {
   validateTokenAll: async (req, res, next) => {
     try {
-      if (req.headers && req.headers.authorization && req.headers.authorization.split(' ')[0] === 'JWT') {
+      if (req.headers && req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
         const token = req.headers.authorization.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await userModel.findById(decoded.id);
@@ -22,7 +22,7 @@ const jwtMiddleware = {
 
   validateTokenAdmin: async (req, res, next) => {
     try {
-      if (req.headers && req.headers.authorization && req.headers.authorization.split(' ')[0] === 'JWT') {
+      if (req.headers && req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
         const token = req.headers.authorization.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await userModel.findById(decoded.id);

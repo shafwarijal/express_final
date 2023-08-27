@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 
 import movieRouter from './routes/movieRouter.js';
 import userRouter from './routes/userRouter.js';
+import responseHelper from './helpers/responseHelper.js';
 
 dotenv.config();
 
@@ -24,7 +25,7 @@ const startServer = async () => {
 
     app.listen(port, () => console.log(`Server started on port http://localhost:${port}`));
   } catch (error) {
-    console.log(error);
+    responseHelper(res, 500, '', error.message);
   }
 };
 

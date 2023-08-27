@@ -7,12 +7,10 @@ const router = express.Router();
 router.post('/', userController.signup);
 router.post('/login', userController.signin);
 router.post('/changeRole/:id', jwtMiddleware.validateTokenAdmin, userController.changeRole);
-router.get('/', userController.getUser);
+router.get('/getUser', jwtMiddleware.validateTokenAdmin, userController.getUser);
+router.get('/getUser/:id', jwtMiddleware.validateTokenAdmin, userController.getUserById);
+router.get('/myProfile', jwtMiddleware.validateTokenAdmin, userController.getProfile);
 router.post('/forgotPassword', userController.requestPasswordReset);
 router.post('/resetPassword/:token/:id', userController.resetPassword);
-
-// router.get('/', userModel.getMovies);
-// router.post('/', userModel.signup);
-// router.put('/:id', userModel.editMovie);
 
 export default router;

@@ -5,11 +5,16 @@ import bcrypt from 'bcrypt';
 import responseHelper from '../helpers/responseHelper.js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { Redis } from 'ioredis';
+
+const redis = new Redis();
 
 const userController = {
   signup: async (req, res) => {
     const { name, email, password } = req.body;
     try {
+      if (!name || !email || !password) return responseHelper(res, 400, '', 'All fields are required');
+
       let hashedPassword = await bcrypt.hash(password, 8);
       const user = new userModel({
         name,
@@ -33,7 +38,7 @@ const userController = {
       const isPasswordValid = bcrypt.compareSync(req.body.password, user.password);
       if (!isPasswordValid) return responseHelper(res, 400, '', 'Invalid password');
 
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
 
       responseHelper(res, 200, { user, token }, 'User logged in successfully');
     } catch (error) {
@@ -57,14 +62,47 @@ const userController = {
 
   getUser: async (req, res) => {
     try {
+      const cachedUser = await redis.get(`cached_user`);
+
+      if (cachedUser) {
+        const parsedUser = JSON.parse(cachedUser);
+        return responseHelper(res, 200, parsedUser, 'Success get all users from redis');
+      }
       const user = await userModel.find({}, 'name email');
-      responseHelper(res, 200, user, 'Success get all users');
+
+      await redis.setex(`cached_user`, 60, JSON.stringify(user));
+      responseHelper(res, 200, user, 'Success get all users from database');
     } catch (error) {
       responseHelper(res, 500, '', error.message);
       console.log(error);
     }
   },
 
+  getUserById: async (req, res) => {
+    try {
+      const cachedUserById = await redis.get(`cached_user_by_id:${req.params.id}`);
+
+      if (cachedUserById) {
+        const parsedUser = JSON.parse(cachedUserById);
+        return responseHelper(res, 200, parsedUser, 'Success get user by id from redis');
+      }
+
+      const user = await userModel.findById(req.params.id, 'name email role');
+      if (!user) return responseHelper(res, 400, '', 'User not found');
+
+      await redis.setex(`cached_user_by_id:${req.params.id}`, 60, JSON.stringify(user));
+
+      responseHelper(res, 200, user, 'Success get user by id from database');
+    } catch (error) {
+      responseHelper(res, 500, '', error.message);
+      console.log(error);
+    }
+  },
+
+  getProfile: async (req, res) => {
+    const loggedInUser = req.user;
+    responseHelper(res, 200, loggedInUser, 'Success get user profile');
+  },
   requestPasswordReset: async (req, res, next) => {
     const { email } = req.body;
     try {
